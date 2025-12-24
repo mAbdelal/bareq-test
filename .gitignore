@@ -1,0 +1,7 @@
+node_modules
+.env
+/src/generated/prisma
+certs
+uploads/*
+!uploads/images-1.jpg
+!.env.example
