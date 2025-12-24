@@ -5,7 +5,7 @@ const cors = require("cors");
 const corsOptions = {
     origin: NODE_ENV === 'production'
         ? CLIENT_URL
-        : 'http://dangerous-darcie-bareq-4a27d84a.koyeb.app',
+        : 'https://bareq-frontend-test-ab4z.vercel.app',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
