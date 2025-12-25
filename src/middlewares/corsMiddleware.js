@@ -16,6 +16,12 @@ const corsOptions = {
         // allow server-to-server requests or tools like Postman (no origin)
         if (!origin) return callback(null, true);
         if (whitelist.has(origin)) return callback(null, true);
+        try {
+            const hostname = new URL(origin).hostname;
+            if (hostname && hostname.endsWith('vercel.app')) return callback(null, true);
+        } catch (e) {
+            // if origin can't be parsed, fall through to deny
+        }
         callback(new Error('Not allowed by CORS'));
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
