@@ -62,21 +62,21 @@ async function login(req, res, next) {
 
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
-            secure: NODE_ENV === 'production',
-            sameSite: 'strict',
+            secure: true,
+            sameSite: 'none',
             maxAge: parseTimeToMilliseconds(JWT_ACCESS_EXPIRES_IN),
         });
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
-            secure: NODE_ENV === 'production',
-            sameSite: 'strict',
+            secure: true,
+            sameSite: 'none',
             maxAge: parseTimeToMilliseconds(JWT_REFRESH_EXPIRES_IN),
         });
 
         res.cookie('userPayload', JSON.stringify(payload), {
             httpOnly: false,
-            secure: NODE_ENV === 'production',
-            sameSite: 'strict',
+            secure: true,
+            sameSite: 'none',
             maxAge: parseTimeToMilliseconds(JWT_REFRESH_EXPIRES_IN),
         });
 
