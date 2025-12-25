@@ -20,7 +20,7 @@ const corsOptions = {
             const hostname = new URL(origin).hostname;
             if (hostname && hostname.endsWith('vercel.app')) return callback(null, true);
         } catch (e) {
-            // if origin can't be parsed, fall through to deny
+            return callback(null, true);
         }
         callback(new Error('Not allowed by CORS'));
     },
