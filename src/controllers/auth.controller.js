@@ -193,20 +193,20 @@ async function refreshToken(req, res, next) {
 
         res.cookie('accessToken', newAccessToken, {
             httpOnly: true,
-            // secure: NODE_ENV === 'production',
+            secure: true,
             sameSite: 'none',
             maxAge: parseTimeToMilliseconds(JWT_ACCESS_EXPIRES_IN),
         });
         res.cookie('refreshToken', newRefreshToken, {
             httpOnly: true,
-            // secure: NODE_ENV === 'production',
+            secure: true,
             sameSite: 'none',
             maxAge: parseTimeToMilliseconds(JWT_REFRESH_EXPIRES_IN),
         });
 
         res.cookie('userPayload', JSON.stringify(payload), {
             httpOnly: false,
-            // secure: NODE_ENV === 'production',
+            secure: true,
             sameSite: 'none',
             maxAge: parseTimeToMilliseconds(JWT_REFRESH_EXPIRES_IN),
         });
