@@ -3,7 +3,8 @@ const cors = require("cors");
 
 const additionalOrigins = [
     'https://bareq-frontend-test-ab4z-mzaq9tfxh-majdis-projects-3748a949.vercel.app',
-    'https://bareq-frontend-test-ab4z-git-main-majdis-projects-3748a949.vercel.app'
+    'https://bareq-frontend-test-ab4z-git-main-majdis-projects-3748a949.vercel.app',
+    'https://bareq-frontend-test-fyjis5igy-majdis-projects-3748a949.vercel.app'
 ];
 
 const whitelist = new Set(additionalOrigins.filter(Boolean));
