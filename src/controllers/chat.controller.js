@@ -555,6 +555,12 @@ const sendMessageWithAttachments = async (req, res, next) => {
             const buyer_id = chat.negotiation.buyer_id;
             const provider_id = chat.negotiation.provider_id;
             if (buyer_id && provider_id) participants = [buyer_id, provider_id];
+        } else {
+            // General chats: use participants from chat table (first_part_id & second_part_id)
+            const { first_part_id, second_part_id } = chat;
+            if (first_part_id && second_part_id) {
+                participants = [first_part_id, second_part_id];
+            }
         }
 
         if (!participants.includes(sender_id)) {

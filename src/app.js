@@ -20,7 +20,7 @@ app.set('trust proxy', 1);
 app.use(cookieParser);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors); // ensure CORS headers are applied before any other middleware responses
+// app.use(cors); // ensure CORS headers are applied before any other middleware responses
 app.use(helmet());
 app.use(morgan("dev"));
 app.use(rateLimit);

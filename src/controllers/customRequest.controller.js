@@ -18,7 +18,7 @@ const searchRequestsForAdmin = async (req, res, next) => {
                 'open', 'in_progress', 'submitted', 'disputed_by_provider',
                 'disputed_by_owner', 'owner_rejected', 'completed'
             ),
-            requester_name: Joi.string().allow('', null), 
+            requester_name: Joi.string().allow('', null),
             academic_category_id: Joi.number().integer(),
             academic_subcategory_id: Joi.number().integer(),
 
@@ -830,8 +830,8 @@ const acceptOffer = async (req, res, next) => {
         });
 
         if (!request) throw new NotFoundError('Request not found');
-        if (request.requester_id !== owner_id) throw new ForbiddenError('Not owner of request');
-        if (request.status !== 'open') throw new BadRequestError('Request is not open');
+        if (request.requester_id !== owner_id) throw new ForbiddenError('لست مالك هذا الطلب');
+        if (request.status !== 'open') throw new BadRequestError('هذا الطلب غير مفتوح');
 
         const offer = request.offers.find((o) => o.id === offer_id);
         if (!offer) throw new BadRequestError('Offer does not belong to request');
