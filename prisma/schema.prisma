@@ -295,21 +295,21 @@ enum AdminApprovalStatus {
 }
 
 model Services {
-  id                      String    @id @default(uuid()) @db.Uuid
-  provider_id             String    @db.Uuid
-  admin_decided_id        String?   @db.Uuid
+  id                      String   @id @default(uuid()) @db.Uuid
+  provider_id             String   @db.Uuid
+  admin_decided_id        String?  @db.Uuid
   academic_category_id    Int
   academic_subcategory_id Int?
   title                   String
   description             String
   buyer_instructions      String?
-  price                   Float     @default(0)
-  delivery_time_days      Int?      @default(0)
+  price                   Float    @default(0)
+  delivery_time_days      Int?     @default(0)
   skills                  String[]
-  rating                  Float?    @default(0.0)
-  ratings_count           Int       @default(0)
-  created_at              DateTime  @default(now()) @db.Timestamptz
-  updated_at              DateTime  @default(now()) @db.Timestamptz
+  rating                  Float?   @default(0.0)
+  ratings_count           Int      @default(0)
+  created_at              DateTime @default(now()) @db.Timestamptz
+  updated_at              DateTime @default(now()) @db.Timestamptz
 
   is_active Boolean @default(true)
 
@@ -318,7 +318,7 @@ model Services {
 
   admin_approval_status    AdminApprovalStatus @default(pending)
   admin_decision_at        DateTime?
-  admin_disapproval_reason String?             
+  admin_disapproval_reason String?
 
   provider            AcademicUsers         @relation("ProviderServices", fields: [provider_id], references: [user_id], onDelete: Cascade)
   admin_decided       Admins?               @relation("AdminDecidedServices", fields: [admin_decided_id], references: [user_id])
@@ -339,8 +339,6 @@ model Services {
   @@index([admin_frozen])
   @@index([admin_approval_status])
 }
-
-
 
 model ServiceAttachments {
   id          String   @id @default(uuid()) @db.Uuid
@@ -363,7 +361,7 @@ model ServicePurchases {
   service      Services                      @relation(fields: [service_id], references: [id], onDelete: Cascade)
   buyer        AcademicUsers                 @relation("BuyerPurchases", fields: [buyer_id], references: [user_id])
   deliverables ServicePurchaseDeliverables[]
-  dispute     Disputes?
+  dispute      Disputes?
   timeline     PurchaseTimeline[]
   transaction  Transactions[]
   chat         Chats?
@@ -623,7 +621,6 @@ model Negotiations {
   provider AcademicUsers @relation("providerNegotiations", fields: [provider_id], references: [user_id])
   chat     Chats?
 }
-
 
 model Messages {
   id         String   @id @default(uuid()) @db.Uuid
