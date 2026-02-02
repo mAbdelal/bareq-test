@@ -484,7 +484,7 @@ async function initiateGoogleLogin(req, res, next) {
         const oauth2Client = new OAuth2Client(
             GOOGLE_CLIENT_ID,
             GOOGLE_CLIENT_SECRET,
-            'http://localhost:8080/api/v1/auth/google/callback'
+            'https://bareq-frontend-test.vercel.app?_vercel_share=9cIZfMAubjIJTe5vx0ztx8EEifSf72DB/api/v1/auth/google/callback'
         );
 
         const scopes = [
@@ -511,7 +511,7 @@ async function handleGoogleCallback(req, res, next) {
         const oauth2Client = new OAuth2Client(
             GOOGLE_CLIENT_ID,
             GOOGLE_CLIENT_SECRET,
-            'http://localhost:8080/api/v1/auth/google/callback'
+            'https://bareq-frontend-test.vercel.app?_vercel_share=9cIZfMAubjIJTe5vx0ztx8EEifSf72DB/api/v1/auth/google/callback'
         );
 
         const { tokens } = await oauth2Client.getToken(code);
