@@ -354,7 +354,18 @@ function registerUser(type) {
             const baseSchema = Joi.object({
                 email: Joi.string().email().required(),
                 username: Joi.string().required(),
-                password: Joi.string().min(8).regex(/[a-zA-Z]/).regex(/[0-9]/).required(),
+                password: Joi.string()
+                    .min(8)
+                    .regex(/[a-zA-Z]/, 'أحرف')  
+                    .regex(/[0-9]/, 'أرقام')     
+                    .required()
+                    .messages({
+                        'string.base': 'يجب أن تكون كلمة المرور نصًا',
+                        'string.empty': 'كلمة المرور لا يمكن أن تكون فارغة',
+                        'string.min': 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل',
+                        'string.pattern.name': 'يجب أن تحتوي كلمة المرور على {#name} واحدة على الأقل',
+                        'any.required': 'كلمة المرور مطلوبة'
+                    }),
                 first_name_ar: Joi.string().allow('', null),
                 last_name_ar: Joi.string().allow('', null),
                 full_name_en: Joi.string().allow('', null),
