@@ -14,7 +14,7 @@ router.post('/register/academic', authController.registerAcademicUser);
 router.post('/register/admin', authController.registerAdminUser);
 
 // Google OAuth routes
-router.get('/google', authController.initiateGoogleLogin);
-router.get('/google/callback', authController.handleGoogleCallback);
+router.post('/google', authController.googleLogin);
+
 
 module.exports = router;

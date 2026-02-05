@@ -69,10 +69,12 @@ model Users {
   last_name_ar           String
   full_name_en           String
   is_active              Boolean   @default(true)
-  created_at             DateTime  @default(now()) @db.Timestamptz
-  updated_at             DateTime  @default(now()) @db.Timestamptz
   reset_password_token   String?
   reset_password_expires DateTime?
+  googleId               String?   @unique 
+
+  created_at             DateTime  @default(now()) @db.Timestamptz
+  updated_at             DateTime  @default(now()) @db.Timestamptz
 
   admin             Admins?
   academicUser      AcademicUsers?
@@ -86,6 +88,7 @@ model Users {
   @@index([email])
   @@index([is_active])
 }
+
 
 model Admins {
   user_id    String   @id @db.Uuid

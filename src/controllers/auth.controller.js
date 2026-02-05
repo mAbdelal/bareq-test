@@ -10,6 +10,7 @@ const Joi = require("joi");
 const { OAuth2Client } = require('google-auth-library');
 
 
+
 function parseTimeToMilliseconds(timeString) {
     const unit = timeString.slice(-1);
     const value = parseInt(timeString.slice(0, -1), 10);
@@ -479,131 +480,242 @@ function registerUser(type) {
     };
 }
 
-async function initiateGoogleLogin(req, res, next) {
+// async function initiateGoogleLogin(req, res, next) {
+//     try {
+//         const oauth2Client = new OAuth2Client(
+//             GOOGLE_CLIENT_ID,
+//             GOOGLE_CLIENT_SECRET,
+//             'https://bareq-frontend-test.vercel.app?_vercel_share=9cIZfMAubjIJTe5vx0ztx8EEifSf72DB/api/v1/auth/google/callback'
+//         );
+
+//         const scopes = [
+//             'https://www.googleapis.com/auth/userinfo.profile',
+//             'https://www.googleapis.com/auth/userinfo.email'
+//         ];
+
+//         const url = oauth2Client.generateAuthUrl({
+//             access_type: 'offline',
+//             scope: scopes,
+//             include_granted_scopes: true
+//         });
+
+//         res.redirect(url);
+//     } catch (err) {
+//         next(err);
+//     }
+// }
+
+// async function handleGoogleCallback(req, res, next) {
+//     try {
+//         const { code } = req.query;
+
+//         const oauth2Client = new OAuth2Client(
+//             GOOGLE_CLIENT_ID,
+//             GOOGLE_CLIENT_SECRET,
+//             'https://bareq-frontend-test.vercel.app?_vercel_share=9cIZfMAubjIJTe5vx0ztx8EEifSf72DB/api/v1/auth/google/callback'
+//         );
+
+//         const { tokens } = await oauth2Client.getToken(code);
+//         oauth2Client.setCredentials(tokens);
+
+//         const oauth2 = new OAuth2Client();
+//         const ticket = await oauth2.verifyIdToken({
+//             idToken: tokens.id_token,
+//             audience: GOOGLE_CLIENT_ID
+//         });
+
+//         const payload = ticket.getPayload();
+//         const { email, name, picture, given_name, family_name } = payload;
+
+//         let user = await prisma.users.findUnique({
+//             where: { email },
+//             include: {
+//                 admin: {
+//                     include: { role: true },
+//                 },
+//                 academicUser: true
+//             },
+//         });
+
+//         // If user exists and is an admin, reject the login
+//         if (user?.admin) {
+//             throw new UnauthorizedError('Admins cannot login using Google');
+//         }
+
+//         if (!user) {
+//             // Generate a random username from email
+//             const baseUsername = email.split('@')[0];
+//             const randomSuffix = Math.random().toString(36).substring(2, 6);
+//             const username = `${baseUsername}_${randomSuffix}`;
+
+//             // Create new user with academic profile
+//             await prisma.$transaction(async (tx) => {
+//                 user = await tx.users.create({
+//                     data: {
+//                         email,
+//                         username,
+//                         password_hash: await hashPassword(crypto.randomBytes(32).toString('hex')),
+//                         first_name_ar: given_name || name.split(' ')[0],
+//                         last_name_ar: family_name || name.split(' ').slice(1).join(' '),
+//                         full_name_en: name,
+//                         avatar: picture,
+//                         is_active: true
+//                     },
+//                     include: {
+//                         admin: {
+//                             include: { role: true },
+//                         },
+//                     },
+//                 });
+
+//                 // Create academic user profile
+//                 await tx.academicUsers.create({
+//                     data: {
+//                         user_id: user.id,
+//                     }
+//                 });
+
+//                 // Create user balance
+//                 await tx.userBalances.create({
+//                     data: {
+//                         user_id: user.id,
+//                         balance: 0,
+//                         frozen_balance: 0
+//                     }
+//                 });
+//             });
+//         } else if (!user.academicUser) {
+//             // If user exists but doesn't have an academic profile, create one
+//             await prisma.$transaction(async (tx) => {
+//                 await tx.academicUsers.create({
+//                     data: {
+//                         user_id: user.id,
+//                     }
+//                 });
+
+//                 await tx.userBalances.create({
+//                     data: {
+//                         user_id: user.id,
+//                         balance: 0,
+//                         frozen_balance: 0
+//                     }
+//                 });
+//             });
+//         }
+
+//         const role = user.admin?.role?.name || null;
+//         const tokenPayload = {
+//             id: user.id,
+//             role,
+//             first_name_ar: user.first_name_ar,
+//             last_name_ar: user.last_name_ar,
+//             avatar: user.avatar,
+//         };
+
+//         const accessToken = signAccessToken(tokenPayload);
+//         const refreshToken = signRefreshToken(tokenPayload);
+
+//         res.cookie('accessToken', accessToken, {
+//             httpOnly: true,
+//             secure: true,
+//             sameSite: 'none',
+//             maxAge: parseTimeToMilliseconds(JWT_ACCESS_EXPIRES_IN),
+//         });
+//         res.cookie('refreshToken', refreshToken, {
+//             httpOnly: true,
+//             secure: true,
+//             sameSite: 'none',
+//             maxAge: parseTimeToMilliseconds(JWT_REFRESH_EXPIRES_IN),
+//         });
+
+//         res.cookie('userPayload', JSON.stringify(tokenPayload), {
+//             httpOnly: false,
+//             secure:true,
+//             sameSite: 'none',
+//             maxAge: parseTimeToMilliseconds(JWT_REFRESH_EXPIRES_IN),
+//         });
+
+//         res.redirect(`${CLIENT_URL}/home`);
+//     } catch (err) {
+//         next(err);
+//     }
+// }
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleLogin = async (req, res, next) => {
     try {
-        const oauth2Client = new OAuth2Client(
-            GOOGLE_CLIENT_ID,
-            GOOGLE_CLIENT_SECRET,
-            'https://bareq-frontend-test.vercel.app?_vercel_share=9cIZfMAubjIJTe5vx0ztx8EEifSf72DB/api/v1/auth/google/callback'
-        );
+        const { token } = req.body; // token from frontend
+        if (!token) throw new BadRequestError('Google token is required');
 
-        const scopes = [
-            'https://www.googleapis.com/auth/userinfo.profile',
-            'https://www.googleapis.com/auth/userinfo.email'
-        ];
-
-        const url = oauth2Client.generateAuthUrl({
-            access_type: 'offline',
-            scope: scopes,
-            include_granted_scopes: true
-        });
-
-        res.redirect(url);
-    } catch (err) {
-        next(err);
-    }
-}
-
-async function handleGoogleCallback(req, res, next) {
-    try {
-        const { code } = req.query;
-
-        const oauth2Client = new OAuth2Client(
-            GOOGLE_CLIENT_ID,
-            GOOGLE_CLIENT_SECRET,
-            'https://bareq-frontend-test.vercel.app?_vercel_share=9cIZfMAubjIJTe5vx0ztx8EEifSf72DB/api/v1/auth/google/callback'
-        );
-
-        const { tokens } = await oauth2Client.getToken(code);
-        oauth2Client.setCredentials(tokens);
-
-        const oauth2 = new OAuth2Client();
-        const ticket = await oauth2.verifyIdToken({
-            idToken: tokens.id_token,
-            audience: GOOGLE_CLIENT_ID
+        // Verify Google token
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID,
         });
 
         const payload = ticket.getPayload();
-        const { email, name, picture, given_name, family_name } = payload;
+        const { sub: googleId, email, name, picture } = payload;
 
+        if (!email) throw new BadRequestError('Google account email not found');
+
+        // Check if user exists
         let user = await prisma.users.findUnique({
             where: { email },
-            include: {
-                admin: {
-                    include: { role: true },
-                },
-                academicUser: true
-            },
+            include: { academicUser: true, admin: { include: { role: true } } },
         });
 
-        // If user exists and is an admin, reject the login
-        if (user?.admin) {
-            throw new UnauthorizedError('Admins cannot login using Google');
-        }
+        let isNewUser = false;
 
         if (!user) {
-            // Generate a random username from email
-            const baseUsername = email.split('@')[0];
-            const randomSuffix = Math.random().toString(36).substring(2, 6);
-            const username = `${baseUsername}_${randomSuffix}`;
+            // Register as academic user if not found
+            isNewUser = true;
 
-            // Create new user with academic profile
             await prisma.$transaction(async (tx) => {
                 user = await tx.users.create({
                     data: {
                         email,
-                        username,
-                        password_hash: await hashPassword(crypto.randomBytes(32).toString('hex')),
-                        first_name_ar: given_name || name.split(' ')[0],
-                        last_name_ar: family_name || name.split(' ').slice(1).join(' '),
-                        full_name_en: name,
+                        username: email.split('@')[0], // fallback username from email
+                        password_hash: '', // empty because Google login
+                        first_name_ar: name.split(' ')[0] || '',
+                        last_name_ar: name.split(' ')[1] || '',
+                        full_name_en: name || '',
                         avatar: picture,
-                        is_active: true
-                    },
-                    include: {
-                        admin: {
-                            include: { role: true },
-                        },
+                        googleId,
+                        is_active: true,
                     },
                 });
 
-                // Create academic user profile
                 await tx.academicUsers.create({
                     data: {
                         user_id: user.id,
-                    }
-                });
-
-                // Create user balance
-                await tx.userBalances.create({
-                    data: {
-                        user_id: user.id,
-                        balance: 0,
-                        frozen_balance: 0
-                    }
-                });
-            });
-        } else if (!user.academicUser) {
-            // If user exists but doesn't have an academic profile, create one
-            await prisma.$transaction(async (tx) => {
-                await tx.academicUsers.create({
-                    data: {
-                        user_id: user.id,
-                    }
+                        academic_status: 'other', // default status
+                    },
                 });
 
                 await tx.userBalances.create({
                     data: {
                         user_id: user.id,
                         balance: 0,
-                        frozen_balance: 0
-                    }
+                        frozen_balance: 0,
+                    },
                 });
             });
+        } else {
+            // If user exists but no googleId, link it
+            if (!user.googleId) {
+                user = await prisma.users.update({
+                    where: { id: user.id },
+                    data: { googleId },
+                });
+            }
+
+            if (!user.is_active) throw new UnauthorizedError('الحساب غير مفعل');
         }
 
+        // Optional: get role if user is admin
         const role = user.admin?.role?.name || null;
-        const tokenPayload = {
+
+        const userPayload = {
             id: user.id,
             role,
             first_name_ar: user.first_name_ar,
@@ -611,9 +723,11 @@ async function handleGoogleCallback(req, res, next) {
             avatar: user.avatar,
         };
 
-        const accessToken = signAccessToken(tokenPayload);
-        const refreshToken = signRefreshToken(tokenPayload);
+        // Create access & refresh tokens
+        const accessToken = signAccessToken(userPayload);
+        const refreshToken = signRefreshToken(userPayload);
 
+        // Set cookies
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: true,
@@ -626,19 +740,23 @@ async function handleGoogleCallback(req, res, next) {
             sameSite: 'none',
             maxAge: parseTimeToMilliseconds(JWT_REFRESH_EXPIRES_IN),
         });
-
-        res.cookie('userPayload', JSON.stringify(tokenPayload), {
+        res.cookie('userPayload', JSON.stringify(userPayload), {
             httpOnly: false,
-            secure:true,
+            secure: true,
             sameSite: 'none',
             maxAge: parseTimeToMilliseconds(JWT_REFRESH_EXPIRES_IN),
         });
 
-        res.redirect(`${CLIENT_URL}/home`);
+        return success(
+            res,
+            { ...userPayload, isNewUser },
+            isNewUser ? 'User registered and logged in via Google' : 'Google login successful'
+        );
     } catch (err) {
         next(err);
     }
-}
+};
+
 
 module.exports = {
     login,
@@ -650,6 +768,5 @@ module.exports = {
     checkUsernameAvailability,
     registerAcademicUser: registerUser('academic'),
     registerAdminUser: registerUser('admin'),
-    initiateGoogleLogin,
-    handleGoogleCallback
+    googleLogin
 };
