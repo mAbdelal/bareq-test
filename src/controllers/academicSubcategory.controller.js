@@ -67,12 +67,12 @@ const createAcademicSubcategory = async (req, res, next) => {
         const { category_id, name, description } = req.body;
 
         const category = await prisma.academicCategorys.findUnique({ where: { id: category_id } });
-        if (!category) throw new NotFoundError('Academic category not found');
+        if (!category) throw new NotFoundError('الفئة الأكاديمية غير موجودة');
 
         const existing = await prisma.academicSubcategorys.findFirst({
             where: { category_id, name }
         });
-        if (existing) throw new BadRequestError('Subcategory name already exists in this category');
+        if (existing) throw new BadRequestError('اسم الفئة الفرعية موجود بالفعل ضمن هذه الفئة');
 
         const subcategory = await prisma.academicSubcategorys.create({
             data: { category_id, name, description }
@@ -126,7 +126,7 @@ const getAcademicSubcategoryById = async (req, res, next) => {
             include: { category: true }
         });
 
-        if (!subcategory) throw new NotFoundError('Academic subcategory not found');
+        if (!subcategory) throw new NotFoundError('الفئة الفرعية الأكاديمية غير موجودة');
 
         return success(res, subcategory, 'Academic subcategory retrieved successfully');
     } catch (err) {
@@ -143,7 +143,7 @@ const updateAcademicSubcategory = async (req, res, next) => {
             where: { id: parseInt(id) }
         });
 
-        if (!subcategory) throw new NotFoundError('Academic subcategory not found');
+        if (!subcategory) throw new NotFoundError('الفئة الفرعية الأكاديمية غير موجودة');
 
         if (name && category_id) {
             const duplicate = await prisma.academicSubcategorys.findFirst({
@@ -153,7 +153,7 @@ const updateAcademicSubcategory = async (req, res, next) => {
                     name
                 }
             });
-            if (duplicate) throw new BadRequestError('Subcategory name already exists in this category');
+            if (duplicate) throw new BadRequestError('اسم الفئة الفرعية موجود بالفعل ضمن هذه الفئة');
         }
 
         const updated = await prisma.academicSubcategorys.update({
@@ -181,7 +181,7 @@ const deactivateAcademicSubcategory = async (req, res, next) => {
         });
 
         if (!subcategory) {
-            throw new NotFoundError('Academic subcategory not found');
+            throw new NotFoundError('الفئة الفرعية الأكاديمية غير موجودة');
         }
 
         if (!subcategory.is_active) {
@@ -212,7 +212,7 @@ const activateAcademicSubcategory = async (req, res, next) => {
         });
 
         if (!subcategory) {
-            throw new NotFoundError('Academic subcategory not found');
+            throw new NotFoundError('الفئة الفرعية الأكاديمية غير موجودة');
         }
 
         if (subcategory.is_active) {

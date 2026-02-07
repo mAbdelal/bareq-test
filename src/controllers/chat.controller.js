@@ -16,7 +16,7 @@ const getOrCreateNegotiationChat = async (req, res, next) => {
         const { service_id, buyer_id, provider_id } = await schema.validateAsync(req.body);
 
         if (![buyer_id, provider_id].includes(user_id) && !req.hasPermission) {
-            throw new UnauthorizedError("You must be either the buyer, provider or admin to access this chat");
+            throw new UnauthorizedError("يجب أن تكون المشتري أو المزود أو المسؤول للوصول إلى هذه المحادثة");
         }
 
         if (buyer_id === provider_id) {
@@ -568,7 +568,8 @@ const sendMessageWithAttachments = async (req, res, next) => {
         }
 
         if (!content.trim() && (!req.files || req.files.length === 0)) {
-            throw new BadRequestError("Message must contain text or attachments.");
+            throw new BadRequestError("يجب أن تحتوي الرسالة على نص أو مرفقات.");
+
         }
 
         // Create message
@@ -630,10 +631,10 @@ const deleteMessage = async (req, res, next) => {
         const sender_id = req.user.id;
 
         const message = await prisma.messages.findUnique({ where: { id: message_id } });
-        if (!message) throw new NotFoundError("Message not found");
+        if (!message) throw new NotFoundError("الرسالة غير موجودة");
 
         if (message.sender_id !== sender_id) {
-            throw new BadRequestError("You are not authorized to delete this message");
+            throw new BadRequestError("غير مصرح لك بحذف هذه الرسالة");
         }
 
         await prisma.messages.delete({ where: { id: message_id } });

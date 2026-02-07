@@ -39,7 +39,7 @@ const getAcademicUserById = async (req, res, next) => {
             }
         });
 
-        if (!academic) throw new NotFoundError('Academic user not found');
+        if (!academic) throw new NotFoundError('المستخدم الأكاديمي غير موجود');
 
         return success(res, academic, 'Academic user fetched successfully');
     } catch (err) {
@@ -72,7 +72,7 @@ const updateAcademicUser = async (req, res, next) => {
             include: { user: true }
         });
 
-        if (!academic) throw new NotFoundError('Academic user not found');
+        if (!academic) throw new NotFoundError('المستخدم الأكاديمي غير موجود');
 
         // Validate academic_status if provided
         if (academic_status && !AcademicStatusEnum.includes(academic_status)) {
@@ -88,7 +88,7 @@ const updateAcademicUser = async (req, res, next) => {
                 }
             });
             if (usernameExists) {
-                throw new BadRequestError('Username is already taken');
+                throw new BadRequestError('اسم المستخدم مستخدم مسبقًا');
             }
         }
 
@@ -129,7 +129,7 @@ const deactivateAcademicUser = async (req, res, next) => {
         const { id } = req.params;
 
         const user = await prisma.users.findUnique({ where: { id } });
-        if (!user) throw new NotFoundError('User not found');
+        if (!user) throw new NotFoundError('المستخدم غير موجود');
 
         if (!user.is_active) return success(res, {}, 'Academic user is already deactivated');
 
@@ -152,7 +152,7 @@ const activateAcademicUser = async (req, res, next) => {
         const { id } = req.params;
 
         const user = await prisma.users.findUnique({ where: { id } });
-        if (!user) throw new NotFoundError('User not found');
+        if (!user) throw new NotFoundError('المستخدم غير موجود');
 
         if (user.is_active) return success(res, {}, 'Academic user is already active');
 
@@ -298,38 +298,10 @@ const uploadIdentityDocument = async (req, res, next) => {
 };
 
 
-// const getSelfAcademicUserProfile = async (req, res, next) => {
-//     try {
-//         const userId = req.user.id;
-//         if (!userId) throw new BadRequestError('User not authenticated');
-
-//         const academic = await prisma.academicUsers.findUnique({
-//             where: { user_id: userId },
-//             include: {
-//                 user: {
-//                     select: {
-//                         username: true,
-//                         avatar: true,
-//                         first_name_ar: true,
-//                         last_name_ar: true,
-//                         full_name_en: true,
-//                     }
-//                 }
-//             }
-//         });
-
-//         if (!academic) throw new NotFoundError('Academic user profile not found');
-
-//         return success(res, academic, 'Academic user profile fetched');
-//     } catch (err) {
-//         next(err);
-//     }
-// };
-
 const getSelfAcademicUserProfile = async (req, res, next) => {
     try {
         const userId = req.user.id;
-        if (!userId) throw new BadRequestError('User not authenticated');
+        if (!userId) throw new BadRequestError('المستخدم غير مصدّق');
 
         const academic = await prisma.academicUsers.findUnique({
             where: { user_id: userId },
@@ -347,7 +319,8 @@ const getSelfAcademicUserProfile = async (req, res, next) => {
             }
         });
 
-        if (!academic) throw new NotFoundError('Academic user profile not found');
+        if (!academic) throw new NotFoundError('ملف المستخدم الأكاديمي غير موجود');
+
 
         const offers = await prisma.customRequestOffers.findMany({
             where: { provider_id: userId },
@@ -463,7 +436,7 @@ const getUserRatingPublic = async (req, res, next) => {
         });
 
         if (!user || !user.academicUser) {
-            throw new NotFoundError('User not found or not an academic user');
+            throw new NotFoundError('المستخدم غير موجود أو ليس مستخدمًا أكاديميًا');
         }
 
         const ratings = await prisma.ratings.findMany({
@@ -538,7 +511,7 @@ const getProfileForPublic = async (req, res, next) => {
         });
 
         if (!academicUser || !academicUser.user.is_active) {
-            return res.status(404).json({ error: 'Academic user not found or inactive' });
+            throw new NotFoundError('المستخدم غير موجود أو غير نشط');
         }
 
         return success(res, academicUser, 'Public academic user profile fetched successfully');
@@ -555,7 +528,8 @@ const getMyBalance = async (req, res, next) => {
             where: { user_id },
         });
 
-        if (!balance) throw new NotFoundError("Balance record not found");
+        if (!balance) throw new NotFoundError(" الرصيد غير موجود");
+
 
         return success(res, balance);
     } catch (err) {
@@ -572,7 +546,7 @@ const getUserBalanceByAdmin = async (req, res, next) => {
             where: { user_id },
         });
 
-        if (!balance) throw new NotFoundError("Balance record not found");
+        if (!balance) throw new NotFoundError("سجل الرصيد غير موجود");
 
         return success(res, balance);
     } catch (err) {

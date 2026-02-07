@@ -20,8 +20,9 @@ function isValidEmail(email) {
 
 
 function isStrongPassword(password) {
-    return /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/.test(password);
+    return /^(?=.*[A-Za-z\u0600-\u06FF])(?=.*\d)[A-Za-z\u0600-\u06FF\d]{8,}$/.test(password);
 }
+
 
 module.exports = {
     hashPassword,

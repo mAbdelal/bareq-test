@@ -4,7 +4,7 @@ const { hashPassword, comparePasswords, isValidEmail, isStrongPassword } = requi
 const { UnauthorizedError, BadRequestError, NotFoundError } = require('../utils/errors');
 const { success } = require('../utils/response');
 const crypto = require('crypto');
-const { RESET_TOKEN_EXPIRES_IN, FRONTEND_URL, JWT_ACCESS_EXPIRES_IN, JWT_REFRESH_EXPIRES_IN, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, CLIENT_URL, NODE_ENV } = require('../config/env');
+const { RESET_TOKEN_EXPIRES_IN, FRONTEND_URL, JWT_ACCESS_EXPIRES_IN, JWT_REFRESH_EXPIRES_IN, NODE_ENV } = require('../config/env');
 const { sendEmail } = require("../utils/email");
 const Joi = require("joi");
 const { OAuth2Client } = require('google-auth-library');
@@ -30,7 +30,7 @@ async function login(req, res, next) {
         const { email, password } = req.body;
 
         if (!isValidEmail(email) || !password) {
-            throw new BadRequestError('Invalid credentials');
+            throw new BadRequestError('بيانات التسجيل غير صحيحة');
         }
 
         const user = await prisma.users.findUnique({
@@ -114,50 +114,6 @@ async function logout(req, res, next) {
 }
 
 
-// async function refreshToken(req, res, next) {
-//     try {
-//         const { refreshToken } = req.body;
-
-//         if (!refreshToken) throw new BadRequestError('No refresh token provided');
-
-//         const decoded = verifyRefreshToken(refreshToken);
-//         if (!decoded?.id) throw new UnauthorizedError('Invalid refresh token');
-
-//         const user = await prisma.users.findUnique({
-//             where: { id: decoded.id },
-//             include: {
-//                 admin: {
-//                     include: {
-//                         role: true
-//                     }
-//                 }
-//             }
-//         });
-
-//         if (!user) throw new UnauthorizedError('User not found');
-//         if (!user.is_active) throw new UnauthorizedError('Account is inactive');
-
-//         const role = user.admin?.role?.name || null;
-
-//         const payload = {
-//             id: user.id,
-//             role,
-//             first_name_ar: user.first_name_ar,
-//             last_name_ar: user.last_name_ar,
-//             avatar: user.username,
-//         };
-
-//         const newAccessToken = signAccessToken(payload);
-
-//         return success(res, {
-//             accessToken: newAccessToken,
-//             user: payload
-//         }, 'Token refreshed');
-//     } catch (err) {
-//         next(err);
-//     }
-// }
-
 async function refreshToken(req, res, next) {
     try {
         const { refreshToken } = req.cookies;
@@ -224,12 +180,12 @@ async function forgotPassword(req, res, next) {
         const { email } = req.body;
 
         if (!isValidEmail(email)) {
-            throw new BadRequestError('Invalid email');
+            throw new BadRequestError('البريد الإلكتروني غير صالح');
         }
 
         const user = await prisma.users.findUnique({ where: { email } });
         if (!user) {
-            throw new NotFoundError('User not found');
+            throw new NotFoundError('المستخدم غير موجود');
         }
 
         const resetToken = crypto.randomBytes(32).toString('hex');
@@ -266,7 +222,9 @@ async function resetPassword(req, res, next) {
     try {
         const { token, password } = req.body;
         if (!token) throw new BadRequestError('Invalid request');
-        if (!isStrongPassword(password)) throw new BadRequestError('Weak password: it must be at least 8 characters long and contain letters and numbers');
+        if (!isStrongPassword(password))
+            throw new BadRequestError('كلمة المرور ضعيفة: يجب أن تتكون من 8 أحرف على الأقل وتحتوي على أحرف وأرقام');
+
 
         const resetTokenHash = crypto.createHash('sha256').update(token).digest('hex');
         const user = await prisma.users.findFirst({
@@ -299,13 +257,16 @@ async function changePassword(req, res, next) {
     try {
         const userId = req.user.id;
         const { oldPassword, newPassword } = req.body;
-        if (!isStrongPassword(newPassword)) throw new BadRequestError('Weak password: it must be at least 8 characters long and contain letters and numbers');
+        if (!isStrongPassword(password))
+            throw new BadRequestError('كلمة المرور ضعيفة: يجب أن تتكون من 8 أحرف على الأقل وتحتوي على أحرف وأرقام');
+
 
         const user = await prisma.users.findUnique({ where: { id: userId } });
         if (!user) throw new UnauthorizedError('User not found');
 
         const valid = await comparePasswords(oldPassword, user.password_hash);
-        if (!valid) throw new UnauthorizedError('Old password incorrect');
+        if (!valid) throw new UnauthorizedError('كلمة المرور القديمة غير صحيحة');
+
 
         const newPasswordHash = await hashPassword(newPassword);
 
@@ -325,7 +286,8 @@ async function checkUsernameAvailability(req, res, next) {
         const { username } = req.params;
 
         if (!username || username.length < 3) {
-            throw new BadRequestError('Username must be at least 3 characters long');
+            throw new BadRequestError('يجب أن يتكون اسم المستخدم من 3 أحرف على الأقل');
+
         }
 
         const existing = await prisma.users.findUnique({
@@ -491,167 +453,6 @@ function registerUser(type) {
         }
     };
 }
-
-// async function initiateGoogleLogin(req, res, next) {
-//     try {
-//         const oauth2Client = new OAuth2Client(
-//             GOOGLE_CLIENT_ID,
-//             GOOGLE_CLIENT_SECRET,
-//             'https://bareq-frontend-test.vercel.app?_vercel_share=9cIZfMAubjIJTe5vx0ztx8EEifSf72DB/api/v1/auth/google/callback'
-//         );
-
-//         const scopes = [
-//             'https://www.googleapis.com/auth/userinfo.profile',
-//             'https://www.googleapis.com/auth/userinfo.email'
-//         ];
-
-//         const url = oauth2Client.generateAuthUrl({
-//             access_type: 'offline',
-//             scope: scopes,
-//             include_granted_scopes: true
-//         });
-
-//         res.redirect(url);
-//     } catch (err) {
-//         next(err);
-//     }
-// }
-
-// async function handleGoogleCallback(req, res, next) {
-//     try {
-//         const { code } = req.query;
-
-//         const oauth2Client = new OAuth2Client(
-//             GOOGLE_CLIENT_ID,
-//             GOOGLE_CLIENT_SECRET,
-//             'https://bareq-frontend-test.vercel.app?_vercel_share=9cIZfMAubjIJTe5vx0ztx8EEifSf72DB/api/v1/auth/google/callback'
-//         );
-
-//         const { tokens } = await oauth2Client.getToken(code);
-//         oauth2Client.setCredentials(tokens);
-
-//         const oauth2 = new OAuth2Client();
-//         const ticket = await oauth2.verifyIdToken({
-//             idToken: tokens.id_token,
-//             audience: GOOGLE_CLIENT_ID
-//         });
-
-//         const payload = ticket.getPayload();
-//         const { email, name, picture, given_name, family_name } = payload;
-
-//         let user = await prisma.users.findUnique({
-//             where: { email },
-//             include: {
-//                 admin: {
-//                     include: { role: true },
-//                 },
-//                 academicUser: true
-//             },
-//         });
-
-//         // If user exists and is an admin, reject the login
-//         if (user?.admin) {
-//             throw new UnauthorizedError('Admins cannot login using Google');
-//         }
-
-//         if (!user) {
-//             // Generate a random username from email
-//             const baseUsername = email.split('@')[0];
-//             const randomSuffix = Math.random().toString(36).substring(2, 6);
-//             const username = `${baseUsername}_${randomSuffix}`;
-
-//             // Create new user with academic profile
-//             await prisma.$transaction(async (tx) => {
-//                 user = await tx.users.create({
-//                     data: {
-//                         email,
-//                         username,
-//                         password_hash: await hashPassword(crypto.randomBytes(32).toString('hex')),
-//                         first_name_ar: given_name || name.split(' ')[0],
-//                         last_name_ar: family_name || name.split(' ').slice(1).join(' '),
-//                         full_name_en: name,
-//                         avatar: picture,
-//                         is_active: true
-//                     },
-//                     include: {
-//                         admin: {
-//                             include: { role: true },
-//                         },
-//                     },
-//                 });
-
-//                 // Create academic user profile
-//                 await tx.academicUsers.create({
-//                     data: {
-//                         user_id: user.id,
-//                     }
-//                 });
-
-//                 // Create user balance
-//                 await tx.userBalances.create({
-//                     data: {
-//                         user_id: user.id,
-//                         balance: 0,
-//                         frozen_balance: 0
-//                     }
-//                 });
-//             });
-//         } else if (!user.academicUser) {
-//             // If user exists but doesn't have an academic profile, create one
-//             await prisma.$transaction(async (tx) => {
-//                 await tx.academicUsers.create({
-//                     data: {
-//                         user_id: user.id,
-//                     }
-//                 });
-
-//                 await tx.userBalances.create({
-//                     data: {
-//                         user_id: user.id,
-//                         balance: 0,
-//                         frozen_balance: 0
-//                     }
-//                 });
-//             });
-//         }
-
-//         const role = user.admin?.role?.name || null;
-//         const tokenPayload = {
-//             id: user.id,
-//             role,
-//             first_name_ar: user.first_name_ar,
-//             last_name_ar: user.last_name_ar,
-//             avatar: user.avatar,
-//         };
-
-//         const accessToken = signAccessToken(tokenPayload);
-//         const refreshToken = signRefreshToken(tokenPayload);
-
-//         res.cookie('accessToken', accessToken, {
-//             httpOnly: true,
-//             secure: true,
-//             sameSite: 'none',
-//             maxAge: parseTimeToMilliseconds(JWT_ACCESS_EXPIRES_IN),
-//         });
-//         res.cookie('refreshToken', refreshToken, {
-//             httpOnly: true,
-//             secure: true,
-//             sameSite: 'none',
-//             maxAge: parseTimeToMilliseconds(JWT_REFRESH_EXPIRES_IN),
-//         });
-
-//         res.cookie('userPayload', JSON.stringify(tokenPayload), {
-//             httpOnly: false,
-//             secure:true,
-//             sameSite: 'none',
-//             maxAge: parseTimeToMilliseconds(JWT_REFRESH_EXPIRES_IN),
-//         });
-
-//         res.redirect(`${CLIENT_URL}/home`);
-//     } catch (err) {
-//         next(err);
-//     }
-// }
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const googleLogin = async (req, res, next) => {

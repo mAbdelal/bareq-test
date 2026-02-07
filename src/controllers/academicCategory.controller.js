@@ -7,7 +7,7 @@ const createAcademicCategory = async (req, res, next) => {
         const { name, description } = req.body;
 
         const existing = await prisma.academicCategorys.findUnique({ where: { name } });
-        if (existing) throw new BadRequestError('Category name already exists');
+        if (existing) throw new BadRequestError('اسم الفئة موجود بالفعل');
 
         const category = await prisma.academicCategorys.create({
             data: {
@@ -75,7 +75,7 @@ const getAcademicCategoryById = async (req, res, next) => {
             }
         });
 
-        if (!category) throw new NotFoundError('Academic category not found');
+        if (!category) throw new NotFoundError('الفئة الأكاديمية غير موجودة');
 
         return success(res, category);
     } catch (err) {
@@ -89,12 +89,12 @@ const updateAcademicCategory = async (req, res, next) => {
         const { name, description } = req.body;
 
         const existing = await prisma.academicCategorys.findUnique({ where: { id: parseInt(id) } });
-        if (!existing) throw new NotFoundError('Academic category not found');
+        if (!existing) throw new NotFoundError('الفئة الأكاديمية غير موجودة');
 
         // Check for name uniqueness if changed
         if (name && name !== existing.name) {
             const nameExists = await prisma.academicCategorys.findUnique({ where: { name } });
-            if (nameExists) throw new BadRequestError('Category name already taken');
+            if (nameExists) throw new BadRequestError('اسم الفئة مستخدم مسبقًا');
         }
 
         const updated = await prisma.academicCategorys.update({
@@ -121,11 +121,11 @@ const deleteAcademicCategory = async (req, res, next) => {
         });
 
         if (!category) {
-            throw new NotFoundError('Academic category not found');
+            throw new NotFoundError('الفئة الأكاديمية غير موجودة');
         }
 
         if (!category.is_active) {
-            return success(res, null, 'Academic category is already inactive');
+            return success(res, null, 'الفئة الأكاديمية غير مفعّلة بالفعل');
         }
 
         const updated = await prisma.academicCategorys.update({
@@ -151,11 +151,11 @@ const activateAcademicCategory = async (req, res, next) => {
         });
 
         if (!category) {
-            throw new NotFoundError('Academic category not found');
+            throw new NotFoundError('الفئة الأكاديمية غير موجودة');
         }
 
         if (category.is_active) {
-            return success(res, null, 'Academic category is already active');
+            return success(res, null, 'الفئة الأكاديمية غير مفعّلة بالفعل');
         }
 
         const updated = await prisma.academicCategorys.update({

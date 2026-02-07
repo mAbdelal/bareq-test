@@ -324,7 +324,7 @@ const getRequestByIdForPublic = async (req, res, next) => {
             },
         });
 
-        if (!request) throw new NotFoundError('Request not found or not available for public view');
+        if (!request) throw new NotFoundError('الطلب غير موجود أو غير متاح للعرض العام');
 
         return success(res, request);
     } catch (err) {
@@ -492,7 +492,7 @@ const getRequestByID = async (req, res, next) => {
         const isOwner = request.requester_id === user_id;
         const isAdminWithPermission = Boolean(req.hasPermission);
         if (!isOwner && !isAdminWithPermission) {
-            throw new UnauthorizedError('You are not authorized to view this request');
+            throw new UnauthorizedError('غير مصرح لك بعرض هذا الطلب');
         }
 
         return success(res, request);
@@ -639,7 +639,7 @@ const deleteRequest = async (req, res, next) => {
         }
 
         if (request.requester_id !== requester_id) {
-            throw new UnauthorizedError("You are not allowed to delete this request");
+            throw new UnauthorizedError("غير مسموح لك بحذف هذا الطلب");
         }
 
         if (request.status !== "open") {
@@ -778,7 +778,7 @@ const deleteOffer = async (req, res, next) => {
             },
         });
 
-        if (!offer) throw new NotFoundError('Offer not found or you are not the owner');
+        if (!offer) throw new NotFoundError('العرض غير موجود أو أنت لست المالك');
 
         await prisma.$transaction(async (tx) => {
             if (offer.attachments?.length) {
@@ -834,14 +834,15 @@ const acceptOffer = async (req, res, next) => {
         if (request.status !== 'open') throw new BadRequestError('هذا الطلب غير مفتوح');
 
         const offer = request.offers.find((o) => o.id === offer_id);
-        if (!offer) throw new BadRequestError('Offer does not belong to request');
+        if (!offer) throw new BadRequestError('العرض لا يتبع هذا الطلب');
+
 
         const offerPrice = offer.price;
 
         // Check requester balance before transaction
         const balance = await prisma.userBalances.findUnique({ where: { user_id: owner_id } });
         if (!balance || balance.balance < offerPrice) {
-            throw new BadRequestError("Insufficient balance to accept offer");
+            throw new BadRequestError("الرصيد غير كافٍ لقبول العرض");
         }
 
         await prisma.$transaction(async (tx) => {
@@ -915,7 +916,7 @@ const submitRequest = async (req, res, next) => {
             throw new ForbiddenError('You are not the provider for this request');
 
         if (request.status !== 'in_progress')
-            throw new BadRequestError('Request is not in progress');
+            throw new BadRequestError('الطلب ليس قيد التنفيذ');
 
         await prisma.$transaction(async (tx) => {
             await tx.customRequests.update({
@@ -962,10 +963,10 @@ const acceptSubmission = async (req, res, next) => {
         if (!request) throw new NotFoundError('Request not found');
         if (request.requester_id !== owner_id) throw new ForbiddenError('You are not the owner');
         if (request.status !== 'submitted')
-            throw new BadRequestError('Request must be submitted to accept');
+            throw new BadRequestError('يجب تقديم الطلب ليتم قبوله');
 
         const offer = request.accepted_offer;
-        if (!offer) throw new BadRequestError("No accepted offer found");
+        if (!offer) throw new BadRequestError("لم يتم العثور على عرض مقبول");
 
         const provider_id = offer.provider_id;
         const price = offer.price;
@@ -1098,7 +1099,7 @@ const rateCustomRequest = async (req, res, next) => {
 
         // Prevent duplicate rating
         if (customRequest.rating_id) {
-            throw new BadRequestError("You have already rated this request");
+            throw new BadRequestError("لقد قمت بتقييم هذا الطلب مسبقًا");
         }
 
         const provider = await prisma.academicUsers.findUnique({
@@ -1165,7 +1166,7 @@ const disputeByProvider = async (req, res, next) => {
         if (!request) throw new NotFoundError('Request not found');
         if (request.accepted_offer?.provider_id !== provider_id) throw new ForbiddenError('Not the provider');
         if (!['in_progress', 'submitted', 'owner_rejected'].includes(request.status)) {
-            throw new BadRequestError('Cannot dispute at this status');
+            throw new BadRequestError('لا يمكن تقديم نزاع في هذه الحالة');
         }
 
         let dispute;
@@ -1218,7 +1219,7 @@ const disputeByOwner = async (req, res, next) => {
         if (!request) throw new NotFoundError('Request not found');
         if (request.requester_id !== owner_id) throw new ForbiddenError('Not owner');
         if (!['in_progress', 'submitted'].includes(request.status)) {
-            throw new BadRequestError('Cannot dispute at this status');
+            throw new BadRequestError('لا يمكن تقديم نزاع في هذه الحالة');
         }
 
         let dispute;
