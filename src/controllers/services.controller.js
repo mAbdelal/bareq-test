@@ -740,7 +740,6 @@ const searchServicesForPublic = async (req, res, next) => {
                 attachments: true
             }
         });
-        console.log(services)
 
         return success(res, {
             total: totalCount,

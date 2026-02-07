@@ -28,16 +28,16 @@ const createServicePurchase = async (req, res, next) => {
             },
         });
 
-        if (!service) throw new NotFoundError('Service not found');
-        if (!service.is_active) throw new BadRequestError('Service is inactive');
-        if (service.owner_frozen) throw new BadRequestError('Service is currently frozen by the provider');
-        if (service.admin_frozen) throw new BadRequestError('Service is currently frozen by admin');
+        if (!service) throw new NotFoundError('الخدمة غير موجودة');
+        if (!service.is_active) throw new BadRequestError('الخدمة غير مفعّلة');
+        if (service.owner_frozen) throw new BadRequestError('الخدمة مجمّدة حاليًا من قِبل مقدم الخدمة');
+        if (service.admin_frozen) throw new BadRequestError('الخدمة مجمّدة حاليًا من قِبل الإدارة');
 
         const price = service.price;
 
         const balance = await prisma.userBalances.findUnique({ where: { user_id: buyer_id } });
         if (!balance || balance.balance < price) {
-            throw new BadRequestError("Insufficient balance to purchase");
+            throw new BadRequestError('الرصيد غير كافٍ');
         }
 
         const purchase = await prisma.$transaction(async (tx) => {
@@ -181,11 +181,11 @@ const getPurchaseById = async (req, res, next) => {
             },
         });
 
-        if (!purchase) throw new NotFoundError('Purchase not found');
+        if (!purchase) throw new NotFoundError('الشراء غير موجود');
         const isParticipant = (purchase.buyer_id === user_id) || (purchase.service.provider_id === user_id);
         const isAdminWithPermission = Boolean(req.hasPermission);
         if (!isParticipant && !isAdminWithPermission) {
-            throw new UnauthorizedError('Not authorized to access this purchase');
+            throw new UnauthorizedError('غير مصرح لك بالوصول إلى هذا الشراء');
         }
 
         return success(res, purchase);
@@ -206,18 +206,18 @@ const providerAcceptPurchase = async (req, res, next) => {
                 include: { service: true },
             });
 
-            if (!purchase) throw new NotFoundError("Service purchase not found");
+            if (!purchase) throw new NotFoundError("عملية شراء الخدمة غير موجودة");
             if (purchase.status !== "pending")
-                throw new BadRequestError("This purchase is not pending");
+                throw new BadRequestError("هذه العملية ليست قيد الانتظار");
 
             const service = purchase.service;
             if (!service || service.provider_id !== provider_id)
-                throw new BadRequestError("You are not authorized to accept this purchase");
+                throw new BadRequestError("غير مصرح لك بقبول عملية الشراء هذه");
 
             const buyerBalance = await tx.userBalances.findUnique({
                 where: { user_id: purchase.buyer_id },
             });
-            if (!buyerBalance) throw new NotFoundError("Buyer's balance not found");
+            if (!buyerBalance) throw new NotFoundError("رصيد المشتري غير موجود");
             if (buyerBalance.balance < service.price)
                 throw new BadRequestError("المشتري لا يملك رصيد كافي");
 
@@ -416,7 +416,7 @@ const buyerAcceptSubmission = async (req, res, next) => {
             throw new UnauthorizedError('Unauthorized: Not your purchase');
         }
         if (purchase.status !== 'submitted') {
-            throw new BadRequestError('No submission to accept');
+            throw new BadRequestError('لا يوجد تسليم لقبوله');
         }
 
         const { price, provider_id } = purchase.service;
@@ -519,7 +519,7 @@ const buyerRejectSubmission = async (req, res, next) => {
         }
 
         if (purchase.status !== 'submitted') {
-            throw new BadRequestError('No submission to reject');
+            throw new BadRequestError('لا يوجد تسليم لرفضه');
         }
 
         await prisma.$transaction([
@@ -561,8 +561,8 @@ const buyerDispute = async (req, res, next) => {
             }
         });
 
-        if (!purchase) throw new NotFoundError('Service purchase not found');
-        if (purchase.buyer_id !== buyer_id) throw new UnauthorizedError('You are not the buyer for this purchase');
+        if (!purchase) throw new NotFoundError('عملية شراء الخدمة غير موجودة');
+        if (purchase.buyer_id !== buyer_id) throw new UnauthorizedError('أنت لست المشتري لهذه العملية');
 
         let dispute;
         await prisma.$transaction(async (tx) => {
@@ -817,14 +817,14 @@ const rateService = async (req, res, next) => {
                 },
             },
         });
-        if (!service) throw new NotFoundError("Service not found");
+        if (!service) throw new NotFoundError("الخدمة غير موجودة");
 
         const ratee_id = service.provider_id;
-        if (!service.provider) throw new NotFoundError("Service provider (ratee) not found");
+        if (!service.provider) throw new NotFoundError("مقدم الخدمة (المُقيم) غير موجود");
 
         // Prevent self-rating
         if (rater_id === ratee_id) {
-            throw new BadRequestError("You can't rate yourself");
+            throw new BadRequestError("لا يمكنك تقييم نفسك");
         }
 
         // Ensure the rater has completed a purchase for this service
@@ -836,7 +836,7 @@ const rateService = async (req, res, next) => {
             },
         });
         if (!completedPurchase) {
-            throw new BadRequestError("You can only rate a service after completing the purchase");
+            throw new BadRequestError("يمكنك تقييم الخدمة فقط بعد إتمام عملية الشراء");
         }
 
         // Check for existing rating
@@ -844,7 +844,7 @@ const rateService = async (req, res, next) => {
             where: { rater_id, service_id },
         });
         if (existingRating) {
-            throw new BadRequestError("You have already rated this service");
+            throw new BadRequestError("لقد قمت بتقييم هذه الخدمة مسبقًا");
         }
 
         // Transaction: create rating and update aggregates
