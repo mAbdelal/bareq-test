@@ -27,14 +27,21 @@ function parseTimeToMilliseconds(timeString) {
 
 async function login(req, res, next) {
     try {
-        const { email, password } = req.body;
+        const { identifier, password } = req.body;
 
-        if (!isValidEmail(email) || !password) {
+        if (!identifier || !password) {
             throw new BadRequestError('بيانات التسجيل غير صحيحة');
         }
 
-        const user = await prisma.users.findUnique({
-            where: { email, is_active: true },
+        // Find user by email or username
+        const user = await prisma.users.findFirst({
+            where: {
+                is_active: true,
+                OR: [
+                    { email: identifier },
+                    { username: identifier }
+                ]
+            },
             include: {
                 admin: {
                     include: { role: true },
@@ -42,10 +49,11 @@ async function login(req, res, next) {
             },
         });
 
-        if (!user) throw new UnauthorizedError('البريد الالكتروني او كلمة المرو غير صحيحة');
+        if (!user) throw new UnauthorizedError('البريد الالكتروني او كلمة المرور غير صحيحة');
 
+        // Compare password
         const valid = await comparePasswords(password, user.password_hash);
-        if (!valid) throw new UnauthorizedError('البريد الالكتروني او كلمة المرو غير صحيحة');
+        if (!valid) throw new UnauthorizedError('البريد الالكتروني او كلمة المرور غير صحيحة');
         if (!user.is_active) throw new UnauthorizedError('الحساب غير مفعل');
 
         const role = user.admin?.role?.name || null;
@@ -58,15 +66,18 @@ async function login(req, res, next) {
             avatar: user.avatar,
         };
 
+        // Sign tokens
         const accessToken = signAccessToken(payload);
         const refreshToken = signRefreshToken(payload);
 
+        // Set cookies
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: true,
             sameSite: 'none',
             maxAge: parseTimeToMilliseconds(JWT_ACCESS_EXPIRES_IN),
         });
+
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: true,
@@ -74,6 +85,7 @@ async function login(req, res, next) {
             maxAge: parseTimeToMilliseconds(JWT_REFRESH_EXPIRES_IN),
         });
 
+        // Optional user payload cookie for frontend
         res.cookie('userPayload', JSON.stringify(payload), {
             httpOnly: false,
             secure: true,
@@ -81,12 +93,12 @@ async function login(req, res, next) {
             maxAge: parseTimeToMilliseconds(JWT_REFRESH_EXPIRES_IN),
         });
 
-
         return success(res, payload, 'Login successful');
     } catch (err) {
         next(err);
     }
 }
+
 
 async function logout(req, res, next) {
     try {

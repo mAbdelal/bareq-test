@@ -169,7 +169,6 @@ async function main() {
     // await seedAdmins_general();
     await seedAdmins_general();
     await seedAdmins();
-
     console.log('✅ Seeding completed.');
 }
 

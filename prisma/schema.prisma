@@ -65,9 +65,9 @@ model Users {
   username               String    @unique
   email                  String    @unique
   password_hash          String
-  first_name_ar          String
-  last_name_ar           String
-  full_name_en           String
+  first_name_ar          String?
+  last_name_ar           String?
+  full_name_en           String?
   is_active              Boolean   @default(true)
   reset_password_token   String?
   reset_password_expires DateTime?
