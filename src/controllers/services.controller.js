@@ -639,7 +639,6 @@ const getMyServices = async (req, res, next) => {
         const services = await prisma.services.findMany({
             where: {
                 provider_id,
-                is_active: true
             },
             include: {
                 academicSubcategory: { select: { name: true } },
