@@ -70,26 +70,30 @@ async function login(req, res, next) {
         const accessToken = signAccessToken(payload);
         const refreshToken = signRefreshToken(payload);
 
-        // Set cookies
+        const origin = req.get('origin') || '';
+        const isLocalhost = origin.includes('localhost');
+        const isHttps = req.secure || origin.startsWith('https');
+
+        const baseCookieOptions = {
+            secure: isHttps && !isLocalhost,
+            sameSite: isLocalhost ? 'lax' : 'none',
+        };
+
         res.cookie('accessToken', accessToken, {
+            ...baseCookieOptions,
             httpOnly: true,
-            secure: true,
-            sameSite: 'none',
             maxAge: parseTimeToMilliseconds(JWT_ACCESS_EXPIRES_IN),
         });
 
         res.cookie('refreshToken', refreshToken, {
+            ...baseCookieOptions,
             httpOnly: true,
-            secure: true,
-            sameSite: 'none',
             maxAge: parseTimeToMilliseconds(JWT_REFRESH_EXPIRES_IN),
         });
 
-        // Optional user payload cookie for frontend
         res.cookie('userPayload', JSON.stringify(payload), {
+            ...baseCookieOptions,
             httpOnly: false,
-            secure: true,
-            sameSite: 'none',
             maxAge: parseTimeToMilliseconds(JWT_REFRESH_EXPIRES_IN),
         });
 
